@@ -15,9 +15,9 @@ export K8S_VERSION="1.31"                     # check: aws eks describe-addon-ve
 # The VPC already exists (per your note). Find subnets with:
 #   aws ec2 describe-subnets --filters Name=vpc-id,Values=$VPC_ID \
 #     --query 'Subnets[].{ID:SubnetId,AZ:AvailabilityZone,CIDR:CidrBlock}' --output table
-export VPC_ID="vpc-0123456789abcdef0"
-export PRIVATE_SUBNET_1="subnet-aaaa1111"     # AZ 1 (e.g. us-east-1a)
-export PRIVATE_SUBNET_2="subnet-bbbb2222"     # AZ 2 (e.g. us-east-1b)  <-- MUST be a different AZ
+export VPC_ID="vpc-001a479b14ad23148"
+export PRIVATE_SUBNET_1="subnet-0385cc9bec19d3524"     # AZ 1 (e.g. us-east-1a)
+export PRIVATE_SUBNET_2="subnet-08e722c41e9031e41"     # AZ 2 (e.g. us-east-1b)  <-- MUST be a different AZ
 export VPC_CIDR="10.0.0.0/16"                 # used to open the DB firewall to the VPC only
 
 # ---- RDS (lives OUTSIDE the EKS cluster) ------------------------------------
