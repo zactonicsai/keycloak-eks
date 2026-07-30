@@ -1,0 +1,40 @@
+# =============================================================================
+# nodepool.yaml — the "min 1 / max 2 nodes" enforcer for EKS Auto Mode.
+#
+# Middle-school version: Auto Mode has no "max node count" dial. Instead you
+# cap the TOTAL CPU the pool may buy. We only allow 2-vCPU machines, and cap
+# the pool at 4 vCPU total → 4 ÷ 2 = at most 2 nodes. Min 1 happens by itself:
+# while the Keycloak pod exists, at least one node must exist to hold it.
+# =============================================================================
+apiVersion: karpenter.sh/v1
+kind: NodePool
+metadata:
+  name: keycloak-small
+spec:
+  template:
+    spec:
+      nodeClassRef:
+        group: eks.amazonaws.com
+        kind: NodeClass
+        name: default            # Auto Mode's built-in NodeClass
+      requirements:
+        # Allow cheap ARM (Graviton) and regular x86 — Auto picks the cheapest.
+        - key: kubernetes.io/arch
+          operator: In
+          values: ["arm64", "amd64"]
+        - key: eks.amazonaws.com/instance-category
+          operator: In
+          values: ["c", "m", "r", "t"]
+        # Only 2-vCPU machines, so the CPU cap below = a node-count cap.
+        - key: eks.amazonaws.com/instance-cpu
+          operator: In
+          values: ["2"]
+        - key: karpenter.sh/capacity-type
+          operator: In
+          values: ["on-demand"]   # change to ["spot","on-demand"] to save ~60%
+  limits:
+    cpu: "4"                      # 4 vCPU total ÷ 2 vCPU each = MAX 2 NODES
+    memory: 16Gi
+  disruption:
+    consolidationPolicy: WhenEmptyOrUnderutilized
+    consolidateAfter: 5m          # shrink back to 1 node when load drops
