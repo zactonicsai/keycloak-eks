@@ -1,0 +1,45 @@
+# ---------------------------------------------------------------------------
+# STACK 05 — Keycloak.  Copy to terraform.tfvars.
+#
+# Values marked FROM STACK 0x come from:  cd ../0x-... && terraform output
+# Or generate automatically:              ../gen-tfvars.sh 05
+#
+# Note there is NO password in this file. Stack 01 put the DB password in SSM,
+# and this stack reads it from there.
+# ---------------------------------------------------------------------------
+aws_region = "us-east-1"
+
+# FROM STACK 03 -------------------------------------------------------------
+cluster_name = "keycloak"
+
+# FROM STACK 01 -------------------------------------------------------------
+rds_endpoint         = "keycloak-db.REPLACE.us-east-1.rds.amazonaws.com"
+rds_port             = 5432
+db_name              = "keycloak"
+db_username          = "keycloak"
+db_password_ssm_path = "/keycloak/db/password"
+
+# Keycloak ------------------------------------------------------------------
+namespace        = "keycloak"
+keycloak_version = "26.6.1"
+replicas         = 1
+hostname_strict  = false
+
+# Exposure: leave false and use port-forward while setting up ($0).
+# Turning this on creates a load balancer, roughly $16+/month.
+ingress_enabled  = false
+# ingress_internal = true
+# ingress_hostname = "keycloak.mycompany.internal"
+# hostname_strict  = true      # turn on together with a real ingress_hostname
+
+# Offline / Artifactory -----------------------------------------------------
+offline_mode = false
+# offline_mode            = true
+# artifactory_host        = "artifactory.mycompany.com"
+# artifactory_docker_repo = "docker-local"
+# artifactory_helm_repo   = "helm-local"
+# artifactory_username    = "deploy-user"
+# Do NOT put the password here. Instead run:
+#   export TF_VAR_artifactory_password="$(aws ssm get-parameter \
+#     --name /keycloak/artifactory/password --with-decryption \
+#     --query Parameter.Value --output text)"

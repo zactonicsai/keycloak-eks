@@ -1,0 +1,29 @@
+# ---------------------------------------------------------------------------
+# STACK 01 — RDS.  Copy to terraform.tfvars and fill in YOUR values.
+# Find them with:  ../../scripts/00c-discover.sh   (or see PLACEHOLDERS.md)
+#
+#   aws ec2 describe-vpcs --query 'Vpcs[].{VPC:VpcId,CIDR:CidrBlock}' --output table
+#   aws ec2 describe-subnets --filters Name=vpc-id,Values=vpc-YOURID \
+#     --query 'Subnets[].{ID:SubnetId,AZ:AvailabilityZone}' --output table
+# ---------------------------------------------------------------------------
+aws_region  = "us-east-1"
+name_prefix = "keycloak"
+
+vpc_id = "vpc-REPLACE-ME"
+
+# MUST be two different Availability Zones.
+private_subnet_ids = [
+  "subnet-REPLACE-ME-AZ-A",
+  "subnet-REPLACE-ME-AZ-B",
+]
+
+# Leave commented to auto-use the VPC's own CIDR.
+# allowed_cidr = "10.0.0.0/16"
+
+instance_class        = "db.t4g.micro"
+engine_version        = "16"
+allocated_storage     = 20
+multi_az              = false
+backup_retention_days = 1
+skip_final_snapshot   = true
+deletion_protection   = false

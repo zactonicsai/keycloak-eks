@@ -1,0 +1,28 @@
+# ---------------------------------------------------------------------------
+# STACK 04 — NodePool.  Copy to terraform.tfvars.
+#
+# Values marked FROM STACK 0x come from:  cd ../0x-... && terraform output
+# Or generate automatically:              ../gen-tfvars.sh 04
+# ---------------------------------------------------------------------------
+aws_region = "us-east-1"
+
+# FROM STACK 03 -------------------------------------------------------------
+cluster_name              = "keycloak"
+cluster_security_group_id = "sg-REPLACE-ME"
+
+# FROM STACK 02 -------------------------------------------------------------
+node_role_name = "keycloak-eks-node-role"
+
+# Same subnets as the cluster.
+private_subnet_ids = [
+  "subnet-REPLACE-ME-AZ-A",
+  "subnet-REPLACE-ME-AZ-B",
+]
+
+# The cap: 2 nodes x 2 vCPU = a 4 vCPU limit.
+max_nodes     = 2
+vcpu_per_node = 2
+
+allowed_architectures = ["arm64", "amd64"]
+capacity_types        = ["on-demand"]
+consolidate_after     = "5m"

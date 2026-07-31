@@ -1,0 +1,31 @@
+# ---------------------------------------------------------------------------
+# STACK 03 — EKS.  Copy to terraform.tfvars.
+#
+# Values marked "FROM STACK 02" are produced by:
+#   cd ../02-iam && terraform output
+# Or generate this whole file automatically:
+#   ../gen-tfvars.sh 03
+# ---------------------------------------------------------------------------
+aws_region   = "us-east-1"
+cluster_name = "keycloak"
+k8s_version  = "1.31"
+
+# FROM STACK 02 -------------------------------------------------------------
+cluster_role_arn = "arn:aws:iam::000000000000:role/keycloak-eks-cluster-role"
+node_role_arn    = "arn:aws:iam::000000000000:role/keycloak-eks-node-role"
+
+# Same subnets you gave stack 01 (or more of them).
+private_subnet_ids = [
+  "subnet-REPLACE-ME-AZ-A",
+  "subnet-REPLACE-ME-AZ-B",
+]
+
+# [] keeps the uncapped built-in pool OFF, so stack 04's 2-node cap is real.
+builtin_node_pools = []
+
+# Set false for a fully private cluster (required for true air-gapped setups;
+# you then need a bastion or VPN to run kubectl).
+endpoint_public_access = true
+# public_access_cidrs  = ["203.0.113.0/24"]   # your office IP range
+
+# additional_admin_arns = ["arn:aws:iam::000000000000:role/PlatformTeam"]

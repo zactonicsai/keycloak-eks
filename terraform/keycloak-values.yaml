@@ -1,0 +1,85 @@
+# =============================================================================
+# keycloak-values.yaml — settings for the codecentric/keycloakx Helm chart.
+# Plain-English version of what this file says is in TUTORIAL.md section 7.
+# Placeholders like ${...} are filled in automatically by 05-install-keycloak.sh
+# using 'envsubst' — you normally don't edit those by hand.
+# =============================================================================
+
+replicas: 1                       # one copy = cheapest. Raise to 2 later for HA.
+
+image:
+  # ONLINE mode: quay.io/keycloak/keycloak   (the official image)
+  # OFFLINE mode: your Artifactory copy — the install script swaps this in.
+  repository: ${KC_IMAGE_REPO}
+  tag: "${KC_VERSION}"
+
+# Offline clusters need the registry password; harmless empty list when online.
+imagePullSecrets: ${IMAGE_PULL_SECRETS}
+
+command:
+  - "/opt/keycloak/bin/kc.sh"
+  - "start"                       # production mode (dev mode = never in prod)
+  - "--http-enabled=true"         # plain HTTP inside the cluster is OK;
+  - "--http-port=8080"            # TLS is added later at the ingress/LB layer
+  - "--hostname-strict=false"     # relax hostname checks while testing;
+                                  # set a real hostname before going live
+
+extraEnv: |
+  - name: KC_BOOTSTRAP_ADMIN_USERNAME       # Keycloak 26+: the FIRST admin login
+    value: admin
+  - name: KC_BOOTSTRAP_ADMIN_PASSWORD
+    valueFrom:
+      secretKeyRef:
+        name: keycloak-admin
+        key: password
+  - name: KC_PROXY_HEADERS                  # trust X-Forwarded-* from the LB
+    value: xforwarded
+  - name: JAVA_OPTS_APPEND                  # keep Java's memory modest
+    value: >-
+      -XX:MaxRAMPercentage=70
+
+# ---- The database: your RDS, OUTSIDE the cluster ---------------------------
+database:
+  vendor: postgres
+  hostname: ${RDS_ENDPOINT}       # e.g. keycloak-db.abc123.us-east-1.rds.amazonaws.com
+  port: 5432
+  database: ${DB_NAME}
+  username: ${DB_USERNAME}
+  existingSecret: keycloak-db     # password comes from a K8s Secret (best practice)
+  existingSecretKey: password
+
+# Tiny init container that waits until the DB answers before Keycloak starts.
+dbchecker:
+  enabled: true
+  image:
+    repository: ${BUSYBOX_REPO}   # docker.io/busybox online / Artifactory offline
+    tag: "1.36"
+
+# ---- Sizing: small enough to fit one small node ----------------------------
+resources:
+  requests:
+    cpu: 250m
+    memory: 768Mi
+  limits:
+    memory: 1280Mi                # Java likes headroom; no CPU limit = best practice
+
+# ---- Reaching Keycloak -----------------------------------------------------
+service:
+  type: ClusterIP                 # free. Use kubectl port-forward to reach it.
+
+# To expose to real users later (costs ~$16+/mo for the load balancer),
+# uncomment and adapt — Auto Mode's load balancing can create an ALB/NLB:
+# ingress:
+#   enabled: true
+#   ingressClassName: alb
+#   annotations:
+#     alb.ingress.kubernetes.io/scheme: internal
+#     alb.ingress.kubernetes.io/target-type: ip
+#   rules:
+#     - host: keycloak.mycompany.internal
+#       paths:
+#         - path: /
+#           pathType: Prefix
+
+http:
+  relativePath: "/"               # serve at the root path (default is /auth)

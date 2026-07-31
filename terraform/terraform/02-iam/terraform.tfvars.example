@@ -1,0 +1,9 @@
+# ---------------------------------------------------------------------------
+# STACK 02 — IAM.  Copy to terraform.tfvars.
+# Nothing to look up: this stack has no dependencies on other stacks.
+# ---------------------------------------------------------------------------
+aws_region  = "us-east-1"
+name_prefix = "keycloak"
+
+# Attaches AmazonSSMManagedInstanceCore to the node role.
+enable_ssm = true
