@@ -1,0 +1,83 @@
+services:
+  postgres:
+    # PostgreSQL 15 remains supported by Keycloak 26.7.
+    image: postgres:15-alpine
+    container_name: keycloak-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-keycloak}
+      POSTGRES_USER: ${POSTGRES_USER:-keycloak}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-change-this-database-password}
+    volumes:
+      # IMPORTANT: Run this Compose file from the SAME directory/project name
+      # as the Keycloak 20 Compose file so Docker reuses the existing volume.
+      - keycloak_postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "pg_isready -U ${POSTGRES_USER:-keycloak} -d ${POSTGRES_DB:-keycloak}"
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 20
+    networks:
+      - keycloak_network
+
+  keycloak:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        KEYCLOAK_VERSION: ${KEYCLOAK_VERSION:-26.7.0}
+    container_name: keycloak26
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      # These variables create a bootstrap administrator only when needed.
+      KC_BOOTSTRAP_ADMIN_USERNAME: ${KC_BOOTSTRAP_ADMIN_USERNAME:-admin}
+      KC_BOOTSTRAP_ADMIN_PASSWORD: ${KC_BOOTSTRAP_ADMIN_PASSWORD:-change-this-admin-password}
+
+      KC_DB: postgres
+      KC_DB_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB:-keycloak}
+      KC_DB_USERNAME: ${POSTGRES_USER:-keycloak}
+      KC_DB_PASSWORD: ${POSTGRES_PASSWORD:-change-this-database-password}
+
+      # Development-only HTTP configuration.
+      KC_HTTP_ENABLED: "true"
+
+      # Health and metrics are served from the management port in Keycloak 26.
+      KC_HEALTH_ENABLED: "true"
+      KC_METRICS_ENABLED: "true"
+
+    # start-dev is correct for a local lab. Do not append --optimized.
+    command:
+      - start-dev
+
+    ports:
+      - "8080:8080"
+      - "9000:9000"
+
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "curl --fail --silent http://127.0.0.1:9000/health/ready >/dev/null || exit 1"
+        ]
+      interval: 15s
+      timeout: 5s
+      retries: 30
+      start_period: 90s
+
+    networks:
+      - keycloak_network
+
+volumes:
+  # Do not delete this volume during an upgrade.
+  keycloak_postgres_data:
+
+networks:
+  keycloak_network:
+    driver: bridge
